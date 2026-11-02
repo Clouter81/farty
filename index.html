@@ -8,52 +8,45 @@
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="farty">
 <meta name="format-detection" content="telephone=no">
-<!-- farty v2.1: turn-based grid, level goals, brown fart-cloud Farty. Fully offline single file, no network requests. -->
+<!-- farty v3: turn-based grid, level goals, bottom vs-bars, brown fart-cloud Farty. Fully offline single file, no network requests. -->
 <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; img-src data:; media-src data:">
-<title>farty 2</title>
+<title>farty 3</title>
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>💨</text></svg>">
 <style>
   *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
   html,body{margin:0;height:100%;overflow:hidden;background:#bdf0ff;font-family:"Trebuchet MS",system-ui,sans-serif;color:#2b2b40;touch-action:none;user-select:none;-webkit-user-select:none;overscroll-behavior:none}
   #game{position:fixed;inset:0;width:100%;height:100%;display:block;z-index:1}
-  #ui{position:fixed;inset:0;z-index:2;display:flex;flex-direction:column;align-items:center;gap:6px;padding:calc(env(safe-area-inset-top) + 6px) 4px calc(env(safe-area-inset-bottom) + 6px);pointer-events:none}
+  #ui{position:fixed;inset:0;z-index:2;display:flex;flex-direction:column;align-items:center;justify-content:space-between;gap:6px;padding:calc(env(safe-area-inset-top) + 6px) 4px calc(env(safe-area-inset-bottom) + 6px);pointer-events:none}
   #ui.hidden{display:none}
   #hud{display:flex;justify-content:space-between;align-items:center;gap:5px;width:min(100%,520px);font-weight:bold;font-size:18px}
   .pill{background:rgba(255,255,255,.9);border-radius:20px;padding:4px 9px;box-shadow:0 2px 0 rgba(0,0,0,.12);white-space:nowrap}
   #goal{border:3px solid #ffb300;font-size:20px;padding:1px 8px}
   #goal.bump{animation:pop .6s}
   #mute{pointer-events:auto;border:none;background:rgba(255,255,255,.9);border-radius:50%;width:36px;height:36px;font-size:18px;box-shadow:0 2px 0 rgba(0,0,0,.12);cursor:pointer;flex:none}
-  #water{display:flex;align-items:center;gap:6px;width:min(72vw,340px);background:rgba(255,255,255,.9);border-radius:14px;padding:4px 10px;box-shadow:0 2px 0 rgba(0,0,0,.12);position:relative}
-  #water i{font-style:normal;font-size:22px}
-  #water .vt{flex:1;height:16px;background:#e3e3ea;border-radius:9px;overflow:visible;position:relative}
-  #water .vf{position:absolute;left:0;top:0;bottom:0;width:50%;background:#29b6f6;border-radius:9px;transition:width .45s cubic-bezier(.3,1.5,.5,1)}
-  #water .vz{position:absolute;left:40%;right:0;top:0;bottom:0;border-radius:0 9px 9px 0;background:repeating-linear-gradient(45deg,rgba(76,175,80,.18) 0 5px,transparent 5px 10px);border-left:2px dashed rgba(46,125,50,.6)}
-  #mid{display:flex;align-items:stretch;justify-content:center;gap:5px;width:100%}
-  .panel{display:flex;flex-direction:column;gap:5px;background:rgba(255,255,255,.9);border-radius:14px;padding:16px 3px 6px;box-shadow:0 2px 0 rgba(0,0,0,.12);position:relative;width:clamp(36px,10vw,48px)}
-  .panel.good{border:3px solid #66bb6a}.panel.bad{border:3px solid #ff8a65}
-  .panel .hd{position:absolute;top:-12px;left:50%;transform:translateX(-50%);font-size:17px;background:#fff;border-radius:12px;padding:0 3px;line-height:1.2}
-  .vb{flex:1;display:flex;flex-direction:column;align-items:center;min-height:0;border-radius:10px;position:relative}
-  .vb i{font-style:normal;font-size:clamp(18px,5vw,24px);line-height:1.15;display:block;flex:none}
-  .panel .vt{flex:1;width:15px;background:#e3e3ea;border-radius:8px;overflow:visible;position:relative;margin-top:1px}
-  .panel .vf{position:absolute;left:0;right:0;bottom:0;height:50%;border-radius:8px;transition:height .45s cubic-bezier(.3,1.5,.5,1)}
-  .panel .vz{position:absolute;left:0;right:0;border-radius:8px 8px 0 0}
-  .good .vz{top:0;bottom:40%;background:repeating-linear-gradient(45deg,rgba(76,175,80,.20) 0 4px,transparent 4px 8px);border-bottom:2px dashed rgba(46,125,50,.7)}
-  .bad .vz{top:0;bottom:70%;background:repeating-linear-gradient(45deg,rgba(229,57,53,.22) 0 4px,transparent 4px 8px);border-bottom:2px dashed rgba(229,57,53,.8)}
-  /* level goal marker */
-  .gl{display:none;position:absolute;z-index:2;background:#ffb300;box-shadow:0 0 0 1px #fff}
-  .panel .gl{left:-4px;right:-4px;height:4px;border-radius:2px;transform:translateY(2px)}
-  #water .gl{top:-5px;bottom:-5px;width:4px;border-radius:2px;transform:translateX(-2px)}
-  .gl::after{content:"🚩";position:absolute;font-size:14px;line-height:1}
-  .panel .gl::after{right:-8px;top:-15px}
-  #water .gl::after{left:0;top:-14px}
-  .vb.goal .gl,#water.goal .gl{display:block}
-  .vb.goal{background:rgba(255,213,79,.45);box-shadow:0 0 0 2px #ffb300}
-  #water.goal{box-shadow:0 0 0 3px #ffb300,0 2px 0 rgba(0,0,0,.12)}
-  .vb.up i,#water.up i{animation:pop .45s}
-  .vb.alarm .vf,#water.alarm .vf{animation:blink .7s infinite}
-  .vb.ok i{filter:drop-shadow(0 0 3px #ffd54f)}
+  /* bottom bar row: 🥩 | 💧vs🧂 | 🌾vs🍬 | 🥑vs🧈 */
+  #bars{display:grid;grid-template-columns:.8fr 1fr 1fr 1fr;gap:6px;width:min(100%,560px);background:rgba(255,255,255,.92);border-radius:14px;padding:4px 7px 10px;box-shadow:0 2px 0 rgba(0,0,0,.12);flex:none}
+  .bar{position:relative;border-radius:10px;padding:1px 2px 0}
+  .ends{display:flex;justify-content:space-between;align-items:flex-end;height:30px}
+  .ends i{font-style:normal;font-size:26px;line-height:1;display:inline-block}
+  .ends .vs{font-size:11px;font-weight:bold;color:#9a9aa8;align-self:center}
+  .trk{position:relative;height:20px;background:#e3e3ea;border-radius:9px;margin-top:2px}
+  .gz,.dz{position:absolute;top:0;bottom:0}
+  .gz{background:repeating-linear-gradient(45deg,rgba(76,175,80,.22) 0 4px,transparent 4px 8px);border-left:2px dashed rgba(46,125,50,.7)}
+  .dz{right:0;border-radius:0 9px 9px 0;background:repeating-linear-gradient(45deg,rgba(229,57,53,.3) 0 4px,transparent 4px 8px);border-left:2px dashed rgba(229,57,53,.85)}
+  .mid{position:absolute;top:-3px;bottom:-3px;width:3px;margin-left:-1.5px;background:#fff;border-radius:2px;box-shadow:0 0 0 1px #c9c9d6}
+  .gf,.bf{position:absolute;top:0;bottom:0;width:0;transition:width .45s cubic-bezier(.3,1.5,.5,1)}
+  .gf{left:0;border-radius:9px 0 0 9px;background:linear-gradient(#81c784,#43a047)}
+  .bf{right:0;border-radius:0 9px 9px 0;background:linear-gradient(#ef9a9a,#e53935)}
+  .single .gf{border-radius:9px}
+  .gl{display:none;position:absolute;top:-6px;bottom:-6px;width:4px;margin-left:-2px;border-radius:2px;background:#ffb300;box-shadow:0 0 0 1px #fff;z-index:2}
+  .gl::after{content:"🚩";position:absolute;left:0;top:-15px;font-size:14px;line-height:1}
+  .bar.goal{background:rgba(255,213,79,.4);box-shadow:0 0 0 2px #ffb300}
+  .bar.goal .gl{display:block}
+  .bar .gi.up,.bar .bi.up{animation:pop .45s}
+  .trk.galarm .gf,.trk.balarm .bf{animation:blink .7s infinite}
+  .gi.ok{filter:drop-shadow(0 0 3px #ffd54f)}
   #board{pointer-events:auto;border-radius:18px;flex:none}
-  #fb{min-height:44px;background:#fff;border-radius:18px;padding:4px 14px;font-size:26px;white-space:nowrap;box-shadow:0 4px 0 rgba(0,0,0,.12);opacity:0;transform:scale(.8);transition:opacity .2s,transform .2s}
+  #fb{position:fixed;left:50%;bottom:110px;z-index:3;pointer-events:none;translate:-50% 0;min-height:44px;max-width:94vw;width:max-content;text-align:center;background:#fff;border-radius:18px;padding:4px 12px;font-size:clamp(18px,5.6vw,26px);white-space:normal;box-shadow:0 4px 0 rgba(0,0,0,.12);opacity:0;transform:scale(.8);transition:opacity .2s,transform .2s}
   #fb.show{opacity:1;transform:scale(1)}
   #fb.good{border:3px solid #4caf50}#fb.bad{border:3px solid #ff7043}
   #fb small{font-size:17px}
@@ -95,12 +88,8 @@
     <div class="pill" id="lives">❤️❤️❤️</div>
     <button id="mute" aria-label="geluid">🔊</button>
   </div>
-  <div id="water" title="water" aria-label="water"><i>💧</i><div class="vt"><div class="vz"></div><div class="vf"></div><div class="gl"></div></div></div>
-  <div id="mid">
-    <div class="panel good" id="pGood"><span class="hd">😄</span></div>
-    <div id="board"></div>
-    <div class="panel bad" id="pBad"><span class="hd">🤢</span></div>
-  </div>
+  <div id="board"></div>
+  <div id="bars"></div>
   <div id="fb"></div>
 </div>
 <div class="pop" id="rres"></div>
@@ -112,13 +101,13 @@
   <div class="legend">
     <div>👆 🍎 → 🦘 → 😋</div>
     <div class="y">🎯🥩 ⬆️ 🚩 → 💨 → ⭐⭐⭐</div>
-    <div class="g">🌾🥩🍊🥑💧 ⬆️ → 😄</div>
-    <div class="r">🍬🧂🧈🏭 ⬆️ → 🤢</div>
+    <div class="g">🥩💧🌾🥑 ⬆️ → 😄</div>
+    <div class="r">🧂🍬🧈 ⬆️ → 🤢</div>
     <div>🤢 → 💔 &nbsp; 💔💔💔 → 🏳️</div>
   </div>
   <button class="go" id="playBtn" aria-label="start">▶️</button>
   <p class="scores" id="bestStart"></p>
-  <a class="v1" href="v1/" aria-label="versie 1">🕹️ v1</a>
+  <p><a class="v1" href="v1/" aria-label="versie 1">🕹️ v1</a> &nbsp; <a class="v1" href="v2/" aria-label="versie 2">🕹️ v2</a></p>
 </div>
 
 <div class="screen hidden" id="over">
@@ -134,73 +123,69 @@
 (() => {
 "use strict";
 const Q=new URLSearchParams(location.search);
-const GOODN=[
-  {k:"carb",i:"🌾",n:"trage koolhydraten",c:"#ffb300"},
-  {k:"pro", i:"🥩",n:"eiwitten",c:"#ab47bc"},
-  {k:"vit", i:"🍊",n:"vitaminen",c:"#ff7043"},
-  {k:"fat", i:"🥑",n:"goede vetten",c:"#8bc34a"},
+// 4 bars. Pairs = one bar: good side fills green from the left, bad side fills red from the right.
+const BARS=[
+  {id:"pro", g:{k:"pro", i:"🥩",n:"eiwitten"}},
+  {id:"wat", g:{k:"wat", i:"💧",n:"water"}, b:{k:"salt",i:"🧂",n:"zout"}},
+  {id:"carb",g:{k:"carb",i:"🌾",n:"trage suikers"}, b:{k:"sug",i:"🍬",n:"snelle suikers"}},
+  {id:"fat", g:{k:"fat", i:"🥑",n:"goede (onverzadigde) vetten"}, b:{k:"sat",i:"🧈",n:"slechte (verzadigde) vetten"}},
 ];
-const BADN=[
-  {k:"sug", i:"🍬",n:"suikers",c:"#ec407a",bad:true},
-  {k:"salt",i:"🧂",n:"zout",c:"#e53935",bad:true},
-  {k:"sat", i:"🧈",n:"verzadigde vetten",c:"#fbc02d",bad:true},
-  {k:"ult", i:"🏭",n:"ultrabewerkt",c:"#78909c",bad:true},
-];
-const WAT={k:"wat",i:"💧",n:"water",c:"#29b6f6"};
-const NUTS=[...GOODN,...BADN,WAT];
+const GOODN=BARS.map(b=>b.g), BADN=BARS.filter(b=>b.b).map(b=>b.b);
+const NUTS=[...GOODN,...BADN];
 const NI=Object.fromEntries(NUTS.map(x=>[x.k,x.i]));
+const GOOD_SPAN=60, BAD_SPAN=40; // share of a pair bar: good side 0..100 -> 0..60% from left, bad side 0..100 -> 0..40% from right
 const GOOD_MIN=40, BAD_WARN=40, BAD_SICK=70, LOW_SICK=15;
 // Rough, real-world-ish nutrient profile per portion (points on a 0-100 bar)
 const FOODS=[
   // healthy
-  {e:"🥦",nu:{vit:18,pro:5,carb:4,wat:5},toot:true},
-  {e:"🫘",nu:{pro:15,carb:15,vit:5},toot:true},
-  {e:"🥕",nu:{vit:16,carb:5,wat:6}},
-  {e:"🍎",nu:{vit:8,carb:5,wat:9,sug:3}},
-  {e:"🍌",nu:{carb:9,vit:9,sug:6}},
-  {e:"🍓",nu:{vit:17,wat:8}},
-  {e:"🫐",nu:{vit:15,carb:3}},
-  {e:"🥝",nu:{vit:18,wat:6}},
-  {e:"🍊",nu:{vit:18,wat:10,sug:3}},
-  {e:"🥬",nu:{vit:16,wat:7}},
-  {e:"🍠",nu:{carb:17,vit:12}},
-  {e:"🥔",nu:{carb:16,vit:6}},
-  {e:"🌽",nu:{carb:13,vit:6,pro:3}},
-  {e:"🥣",nu:{carb:20,pro:6,vit:4}},        // havermout
+  {e:"🥦",nu:{pro:6,carb:6,wat:10},toot:true},
+  {e:"🫘",nu:{pro:15,carb:15},toot:true},
+  {e:"🥕",nu:{carb:8,wat:10}},
+  {e:"🍎",nu:{carb:5,wat:9,sug:4}},
+  {e:"🍌",nu:{carb:10,sug:7}},
+  {e:"🍓",nu:{wat:12,carb:4,sug:3}},
+  {e:"🫐",nu:{carb:6,wat:6,sug:3}},
+  {e:"🥝",nu:{wat:10,carb:5}},
+  {e:"🍊",nu:{wat:14,carb:3,sug:4}},
+  {e:"🥬",nu:{wat:12,carb:3}},
+  {e:"🍠",nu:{carb:20}},
+  {e:"🥔",nu:{carb:18}},
+  {e:"🌽",nu:{carb:15,pro:3}},
+  {e:"🥣",nu:{carb:22,pro:6}},        // havermout
   {e:"🍚",nu:{carb:14,pro:3}},
-  {e:"🐟",nu:{pro:20,fat:18,vit:6}},        // vette vis: omega 3
-  {e:"🥜",nu:{fat:17,pro:9,vit:4}},
-  {e:"🌰",nu:{fat:15,pro:6,vit:5}},
-  {e:"🥑",nu:{fat:20,vit:8,carb:3}},
+  {e:"🐟",nu:{pro:20,fat:18}},        // vette vis: omega 3
+  {e:"🥜",nu:{fat:17,pro:9}},
+  {e:"🌰",nu:{fat:15,pro:6}},
+  {e:"🥑",nu:{fat:20,carb:3,wat:4}},
   {e:"🫒",nu:{fat:15,salt:8}},
-  {e:"🥚",nu:{pro:16,fat:4,sat:4,vit:5}},
+  {e:"🥚",nu:{pro:16,fat:4,sat:4}},
   {e:"🍗",nu:{pro:22,sat:4}},
-  {e:"🥛",nu:{pro:10,wat:10,sat:5,vit:4}},
-  {e:"🍐",nu:{vit:8,carb:6,wat:7},toot:true},
-  {e:"🍉",nu:{wat:22,vit:6,sug:4}},
+  {e:"🥛",nu:{pro:10,wat:10,sat:5}},
+  {e:"🍐",nu:{carb:7,wat:8,sug:3},toot:true},
+  {e:"🍉",nu:{wat:22,sug:4}},
   {e:"💧",nu:{wat:30}},
-  {e:"🍵",nu:{wat:22,vit:3}},
+  {e:"🍵",nu:{wat:24}},
   // in between
   {e:"🧀",nu:{pro:10,sat:14,salt:10}},
   {e:"🍞",nu:{carb:12,pro:4,salt:6,sug:3}},
-  // unhealthy
-  {e:"🍬",nu:{sug:22,ult:14}},
-  {e:"🍭",nu:{sug:22,ult:12}},
-  {e:"🥤",nu:{sug:24,ult:14,wat:5}},
-  {e:"🍩",nu:{sug:18,sat:14,ult:14}},
-  {e:"🧁",nu:{sug:18,sat:10,ult:10}},
-  {e:"🍪",nu:{sug:16,sat:10,ult:12}},
-  {e:"🍫",nu:{sug:16,sat:14,ult:6}},
-  {e:"🍦",nu:{sug:16,sat:12,ult:8}},
-  {e:"🍟",nu:{salt:18,sat:14,ult:10,carb:3}},
-  {e:"🥨",nu:{salt:22,sug:6,ult:6}},
-  {e:"🌭",nu:{salt:20,sat:14,ult:18,pro:6}},
-  {e:"🍔",nu:{sat:18,salt:14,ult:12,pro:10}},
-  {e:"🍕",nu:{sat:14,salt:16,ult:8,pro:6,carb:4}},
-  {e:"🥓",nu:{salt:18,sat:16,ult:10,pro:8}},
+  // unhealthy (salty snacks also make you thirsty: water ⬇️)
+  {e:"🍬",nu:{sug:24}},
+  {e:"🍭",nu:{sug:24}},
+  {e:"🥤",nu:{sug:26,wat:5}},
+  {e:"🍩",nu:{sug:18,sat:14}},
+  {e:"🧁",nu:{sug:18,sat:10}},
+  {e:"🍪",nu:{sug:16,sat:10}},
+  {e:"🍫",nu:{sug:16,sat:14}},
+  {e:"🍦",nu:{sug:16,sat:12}},
+  {e:"🍟",nu:{salt:18,sat:14,carb:3,wat:-4}},
+  {e:"🥨",nu:{salt:22,sug:6,wat:-4}},
+  {e:"🌭",nu:{salt:22,sat:14,pro:6,wat:-4}},
+  {e:"🍔",nu:{sat:18,salt:14,pro:10}},
+  {e:"🍕",nu:{sat:14,salt:16,pro:6,carb:4}},
+  {e:"🥓",nu:{salt:20,sat:16,pro:8,wat:-4}},
 ];
 const sumOf=(f,list)=>list.reduce((s,x)=>s+(f.nu[x.k]||0),0);
-FOODS.forEach(f=>{ f.bad=sumOf(f,BADN)>sumOf(f,GOODN)+(f.nu.wat||0); });
+FOODS.forEach(f=>{ f.bad=sumOf(f,BADN)>sumOf(f,GOODN); });
 const HEALTHY=FOODS.filter(f=>!f.bad&&f.e!=="💧"), JUNK=FOODS.filter(f=>f.bad), DRINK=FOODS.filter(f=>f.e==="💧"||f.e==="🍵"||f.e==="🍉");
 
 
@@ -211,14 +196,13 @@ const COLS=5, HC=2; let ROWS=7, HR=3;   // Farty sits in the centre cell; rows a
 
 function layout(){
   const ui=$("ui"); const hidden=ui.classList.contains("hidden"); if(hidden){ ui.style.visibility="hidden"; ui.classList.remove("hidden"); }
-  const pw=$("pGood").offsetWidth+$("pBad").offsetWidth+10+8+2;
   const cs=getComputedStyle(ui), pad=(parseFloat(cs.paddingTop)||0)+(parseFloat(cs.paddingBottom)||0);
-  const usedH=$("hud").offsetHeight+$("water").offsetHeight+48+6*3+pad+4;
-  const availW=W-pw, availH=H-usedH;
-  let c=Math.floor(Math.min(availW/COLS,availH/5,84));
+  const availW=W-12, availH=H-$("hud").offsetHeight-$("bars").offsetHeight-6*2-pad-8;
+  let c=Math.floor(Math.min(availW/COLS,availH/5,100));
   ROWS=Math.max(5,Math.min(11,Math.floor(availH/c))); if(ROWS%2===0) ROWS--; HR=(ROWS-1)/2;
   $("board").style.width=c*COLS+"px"; $("board").style.height=c*ROWS+"px";
   const r=$("board").getBoundingClientRect(); B={x:r.left,y:r.top,w:r.width,h:r.height,c};
+  $("fb").style.bottom=(H-r.bottom+10)+"px";
   if(hidden){ ui.classList.add("hidden"); ui.style.visibility=""; } }
 function resize(){ DPR=Math.min(window.devicePixelRatio||1,2.5); W=innerWidth; H=innerHeight; cv.width=W*DPR; cv.height=H*DPR; cx.setTransform(DPR,0,0,DPR,0,0); layout(); }
 
@@ -261,31 +245,31 @@ setMuteIcon();
 
 // ---------- Bars ----------
 const nut={}, barEl={};
-const vbHtml=x=>`<div class="vb" id="nb_${x.k}" title="${x.n}" aria-label="${x.n}"><i>${x.i}</i><div class="vt"><div class="vz"></div><div class="vf" style="background:${x.c}"></div><div class="gl"></div></div></div>`;
-$("pGood").insertAdjacentHTML("beforeend",GOODN.map(vbHtml).join(""));
-$("pBad").insertAdjacentHTML("beforeend",BADN.map(vbHtml).join(""));
-[...GOODN,...BADN].forEach(x=>{const b=$("nb_"+x.k); barEl[x.k]={box:b,fill:b.querySelector(".vf"),icon:b.querySelector("i"),gl:b.querySelector(".gl"),h:true};});
-barEl.wat={box:$("water"),fill:$("water").querySelector(".vf"),icon:$("water").querySelector("i"),gl:$("water").querySelector(".gl"),h:false};
+$("bars").innerHTML=BARS.map(b=>`<div class="bar${b.b?"":" single"}" id="bar_${b.id}" title="${b.g.n}${b.b?" / "+b.b.n:""}" aria-label="${b.g.n}${b.b?" / "+b.b.n:""}">
+  <div class="ends"><i class="gi">${b.g.i}</i>${b.b?`<span class="vs">⇄</span><i class="bi">${b.b.i}</i>`:""}</div>
+  <div class="trk"><div class="gz" style="left:${40*(b.b?GOOD_SPAN:100)/100}%;width:${(b.b?GOOD_SPAN:100)*0.6}%"></div>${b.b?`<div class="dz" style="width:${30*BAD_SPAN/100}%"></div><div class="mid" style="left:${GOOD_SPAN}%"></div>`:""}<div class="gf"></div>${b.b?'<div class="bf"></div>':""}<div class="gl"></div></div></div>`).join("");
+BARS.forEach(b=>{ const box=$("bar_"+b.id), trk=box.querySelector(".trk");
+  barEl[b.g.k]={box,trk,fill:box.querySelector(".gf"),icon:box.querySelector(".gi"),gl:box.querySelector(".gl"),span:b.b?GOOD_SPAN:100,bad:false};
+  if(b.b) barEl[b.b.k]={box,trk,fill:box.querySelector(".bf"),icon:box.querySelector(".bi"),span:BAD_SPAN,bad:true}; });
 function resetNut(){ GOODN.forEach(x=>nut[x.k]=55); BADN.forEach(x=>nut[x.k]=5); nut.wat=65; renderBars(); }
-function pulse(k){ const e=barEl[k].box; e.classList.remove("up"); void e.offsetWidth; e.classList.add("up"); }
+function pulse(k){ const e=barEl[k].icon; e.classList.remove("up"); void e.offsetWidth; e.classList.add("up"); }
 function mood(){ const g=GOODN.map(x=>nut[x.k]), b=BADN.map(x=>nut[x.k]);
-  if(b.some(v=>v>=BAD_SICK)||g.some(v=>v<=LOW_SICK)||nut.wat<=LOW_SICK) return "sick";
-  if(g.every(v=>v>=GOOD_MIN)&&nut.wat>=GOOD_MIN&&b.every(v=>v<BAD_WARN)) return "healthy";
+  if(b.some(v=>v>=BAD_SICK)||g.some(v=>v<=LOW_SICK)) return "sick";
+  if(g.every(v=>v>=GOOD_MIN)&&b.every(v=>v<BAD_WARN)) return "healthy";
   return "ok"; }
 function renderBars(){ NUTS.forEach(x=>{ const v=nut[x.k], e=barEl[x.k];
-    e.fill.style[e.h?"height":"width"]=v.toFixed(1)+"%";
-    e.box.classList.toggle("alarm", x.bad? v>=BAD_SICK : v<=LOW_SICK+5);
-    e.box.classList.toggle("ok", x.bad? v<BAD_WARN : v>=GOOD_MIN); }); }
+    e.fill.style.width=(v*e.span/100).toFixed(1)+"%";
+    if(e.bad) e.trk.classList.toggle("balarm",v>=BAD_SICK); else { e.trk.classList.toggle("galarm",v<=LOW_SICK+5); e.icon.classList.toggle("ok",v>=GOOD_MIN); } }); }
 const clamp=v=>Math.max(0,Math.min(100,v));
 const drainGood=()=>Math.min(7,4+(level-1)*0.4), DRAIN_WAT=7, DRAIN_BAD=3;
-function drain(){ GOODN.forEach(x=>nut[x.k]=clamp(nut[x.k]-drainGood())); BADN.forEach(x=>nut[x.k]=clamp(nut[x.k]-DRAIN_BAD)); nut.wat=clamp(nut.wat-DRAIN_WAT); renderBars(); }
+function drain(){ GOODN.forEach(x=>nut[x.k]=clamp(nut[x.k]-(x.k==="wat"?DRAIN_WAT:drainGood()))); BADN.forEach(x=>nut[x.k]=clamp(nut[x.k]-DRAIN_BAD)); renderBars(); }
 
 // ---------- Level goals: fill ONE healthy nutrient up to the 🚩 ----------
-const GOAL_ORDER=["pro","carb","vit","wat","fat"];
+const GOAL_ORDER=["pro","wat","carb","fat"];
 let goal={k:"pro",v:80};
 function goalFor(n){ const k=GOAL_ORDER[(n-1)%GOAL_ORDER.length]; const v=+Q.get("lt")||Math.min(95,78+Math.floor((n-1)/GOAL_ORDER.length)*6+(k==="wat"?6:0)); return {k,v}; }
 function applyGoal(){ NUTS.forEach(x=>barEl[x.k].box.classList.remove("goal")); const e=barEl[goal.k];
-  e.box.classList.add("goal"); e.gl.style.cssText=e.h?`bottom:${goal.v}%`:`left:${goal.v}%`;
+  e.box.classList.add("goal"); e.gl.style.left=(goal.v*e.span/100)+"%";
   $("goal").textContent="🎯"+NI[goal.k]; $("goal").classList.remove("bump"); void $("goal").offsetWidth; $("goal").classList.add("bump"); }
 function showLevelIntro(){ $("lvl").innerHTML=`<div class="rr">🏁${level}</div><div class="rf">🎯${NI[goal.k]}</div><div class="rs">⬆️🚩</div>`; $("lvl").classList.add("show");
   phase="intro"; phaseT=0; sfx.round(); }
@@ -308,7 +292,7 @@ function stock(){ // keep 4..8 foods on the board; always something useful in re
   while(withFood().length>MAX_FOOD){ const t=pick(withFood()); t.item=null; }
   const target=MIN_FOOD+((Math.random()*(MAX_FOOD-MIN_FOOD-1))|0)+1; // 5..7
   while(withFood().length<target) place(genFood());
-  const needs=[goal.k,...[...GOODN,WAT].filter(x=>nut[x.k]<50).map(x=>x.k)];
+  const needs=[goal.k,...GOODN.filter(x=>nut[x.k]<50).map(x=>x.k)];
   for(const k of [...new Set(needs)]) if(!cells.some(t=>useful(t.item,k))) place(pick(FOODS.filter(f=>useful(f,k))));
   if(cells.filter(t=>t.item&&!t.item.bad).length<3) place(pick(HEALTHY)); }
 
@@ -330,7 +314,7 @@ function updateHud(){ $("score").textContent="⭐"+score; $("round").textContent
 // ---------- Feedback (icons only) ----------
 let fbTimer=null;
 function showFb(item){ const el=$("fb"); el.className=item.bad?"bad":"good";
-  const ps=Object.entries(item.nu).sort((a,b)=>b[1]-a[1]).map(([k,d])=>`${NI[k]}<small>${d>=15?"⬆️⬆️":"⬆️"}</small>`).join(" ");
+  const ps=Object.entries(item.nu).sort((a,b)=>b[1]-a[1]).map(([k,d])=>`${NI[k]}<small>${d<0?"⬇️":d>=15?"⬆️⬆️":"⬆️"}</small>`).join(" ");
   el.innerHTML=`${item.e} → ${ps}${item.bad?" 👎":" 👍"}`; void el.offsetWidth; el.classList.add("show");
   clearTimeout(fbTimer); fbTimer=setTimeout(()=>el.classList.remove("show"),2200); }
 function flyToBars(item,sx,sy){
@@ -363,7 +347,7 @@ function land(){ const j=jump; jump=null; fx=j.to.x; fy=j.to.y; cam={x:fx,y:fy};
     showFb(item); flyToBars(item,PX(),PY()-PR()*0.3);
     if(item.bad){ eatenBad.push(item.e); sfx.bad(); player.sad=1; burst(PX(),PY(),["#ff7043","#ffb199","#ffd54f"],10); }
     else { eatenGood.push(item.e); sfx.good(); player.mouth=1; burst(PX(),PY(),["#66bb6a","#ffee58","#ffffff","#81d4fa"],12);
-      const gain=GOODN.reduce((s,x)=>s+(item.nu[x.k]||0),0)+(item.nu.wat||0)/2; let pts=Math.round(gain/2);
+      const gain=GOODN.reduce((s,x)=>s+(x.k==="wat"?0.6:1)*Math.max(0,item.nu[x.k]||0),0); let pts=Math.round(gain/2);
       if(item.toot){ pts*=2; setTimeout(toot,250); }
       score+=pts; floater("+"+pts,PX(),PY()-PR()*1.9,"#2e7d32",26); } }
   else renderBars();
@@ -507,7 +491,7 @@ function step(now){ requestAnimationFrame(step); let dt=Math.min(0.05,(now-last)
   for(const fl of floaters){ cx.globalAlpha=Math.max(0,fl.life); cx.font=`bold ${fl.size}px "Trebuchet MS",${EMO}`; cx.lineWidth=5; cx.strokeStyle="#fff"; cx.strokeText(fl.text,fl.x,fl.y); cx.fillStyle=fl.color; cx.fillText(fl.text,fl.x,fl.y); }
   cx.globalAlpha=1; cx.restore(); }
 addEventListener("resize",()=>{ resize(); }); resize(); reset(); showBestStart();
-window.__farty={version:"2.1",tap,start:startGame,get state(){return state;},get score(){return score;},get lives(){return lives;},get nut(){return {...nut};},get mood(){return mood();},get phase(){return phase;},get turns(){return turns;},get level(){return level;},get goal(){return {...goal};},get rows(){return ROWS;},
+window.__farty={version:"3",tap,start:startGame,get state(){return state;},get score(){return score;},get lives(){return lives;},get nut(){return {...nut};},get mood(){return mood();},get phase(){return phase;},get turns(){return turns;},get level(){return level;},get goal(){return {...goal};},get rows(){return ROWS;},
   around(){ const o=[]; for(let y=-HR;y<=HR;y++)for(let x=-HC;x<=HC;x++){ const t=tile(fx+x,fy+y); o.push({x,y,e:t.item?t.item.e:null,bad:t.item?t.item.bad:null,nu:t.item?t.item.nu:null}); } return o; }};
 if(Q.get("autostart")==="1") startGame();
 requestAnimationFrame(t=>{ last=t; step(t); });
